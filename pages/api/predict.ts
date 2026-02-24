@@ -52,15 +52,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'Betting window has closed (28 days after event creation)' });
   }
 
-  // Validate guest belongs to event
+  // Validate guest belongs to event and hasn't been resolved yet
   const { data: guest } = await supabase
     .from('guests')
-    .select('id')
+    .select('id, actual_booking_date')
     .eq('id', guest_id)
     .eq('event_id', event_id)
     .maybeSingle();
 
   if (!guest) return res.status(400).json({ error: 'Guest not found in this event' });
+  if (guest.actual_booking_date) return res.status(400).json({ error: 'This horse has already booked — betting is closed for them' });
 
   const { error } = await supabase.from('predictions').insert({
     user_id: session.user.id,

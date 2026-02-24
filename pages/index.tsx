@@ -26,6 +26,7 @@ interface HorseStat {
   betters: number;
   pot: number;
   colorIndex: number;
+  actual_booking_date: string | null;
 }
 
 interface BetLogEntry {
@@ -104,7 +105,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({ req, res }
   // Aggregate per horse — colorIndex based on alphabetical position (stable)
   const statMap = new Map<string, HorseStat>();
   for (const [i, g] of (guests ?? []).entries()) {
-    statMap.set(g.id, { id: g.id, name: g.name, betters: 0, pot: 0, colorIndex: i });
+    statMap.set(g.id, { id: g.id, name: g.name, betters: 0, pot: 0, colorIndex: i, actual_booking_date: g.actual_booking_date });
   }
   for (const p of preds) {
     const stat = statMap.get(p.guest_id);
@@ -127,9 +128,10 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({ req, res }
     year: 'numeric', month: 'long', day: 'numeric',
   });
 
-  // When resolved, compute per-horse scored results
+  // Compute per-horse scored results for any horse that has a booking date
   let resolvedByHorse: Record<string, ResolvedPredRow[]> = {};
-  if (event.status === 'resolved') {
+  const anyFrozen = (guests ?? []).some(g => g.actual_booking_date);
+  if (anyFrozen) {
     const predWithDetails = preds.map((p) => ({
       id: p.id,
       user_id: p.user_id,
@@ -336,9 +338,10 @@ export default function IndexPage({
           </div>
           <div className="horse-list">
             {horses.map((h, i) => {
-              const horseResults = resolved ? (resolvedByHorse[h.id] ?? []) : [];
+              const isFrozen = h.actual_booking_date !== null;
+              const horseResults = isFrozen ? (resolvedByHorse[h.id] ?? []) : [];
               return (
-                <div key={h.id} className={resolved ? 'horse-item' : undefined}>
+                <div key={h.id} className={isFrozen ? 'horse-item' : undefined}>
                   <div className="horse-row">
                     <div className="horse-rank-name">
                       <span className="horse-rank">{i + 1}</span>
@@ -353,7 +356,7 @@ export default function IndexPage({
                       <span className="horse-pot">${h.pot}</span>
                     </div>
                   </div>
-                  {resolved && horseResults.length > 0 && (
+                  {isFrozen && horseResults.length > 0 && (
                     <div className="horse-results">
                       {horseResults.map((r) => {
                         const medal = r.rank === 1 ? '🥇' : r.rank === 2 ? '🥈' : null;
@@ -426,7 +429,7 @@ export default function IndexPage({
                   Horse
                   <select value={guestId} onChange={(e) => setGuestId(e.target.value)} required>
                     <option value="" disabled>Select a horse…</option>
-                    {guests.map((g) => (
+                    {guests.filter(g => !g.actual_booking_date).map((g) => (
                       <option key={g.id} value={g.id}>{g.name}</option>
                     ))}
                   </select>
