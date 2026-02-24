@@ -1,5 +1,5 @@
 const gameConfig = {
-  eventName: "Connor's Bachelor Party",
+  eventName: "Ryanmarket",
   guests: [
     "Alex",
     "Bryan",
