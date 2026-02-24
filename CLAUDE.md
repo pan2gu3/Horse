@@ -148,10 +148,11 @@ curl -X POST https://horse-five.vercel.app/api/admin/resolve \
 
 **Guest UUIDs** (from seed — use these for the resolve command):
 ```
-3d039cac-85f1-4196-829a-d1e29197483e  Alex
-540a2c45-56b8-4d8e-bb03-67b381bda1e9  Bryan
-5f9b95e6-4294-4240-85a8-2ff2b14ab0b2  Troy
+9adb8919-b0f9-45a0-b646-5809493d0b35  Alex
+cda2130c-1f45-44a5-b552-04ac1f894389  Bryan
+afc3799b-d6b4-44ae-8666-0c32a0d3eb75  Troy
 ```
+Note: UUIDs change every time `npm run fresh` or `npm run seed` is run. Query Supabase for current values: `SELECT id, name FROM guests;`
 
 ---
 
