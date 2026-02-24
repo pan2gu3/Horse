@@ -33,7 +33,6 @@ interface BetLogEntry {
   username: string;
   bet_amount: number;
   guest_name: string;
-  predicted_date: string;
   submitted_at: string;
 }
 
@@ -119,7 +118,6 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({ req, res }
     username: p.users?.username ?? 'Unknown',
     bet_amount: p.bet_amount,
     guest_name: p.guests?.name ?? 'Unknown',
-    predicted_date: p.predicted_date,
     submitted_at: p.submitted_at,
   }));
 
@@ -363,10 +361,9 @@ export default function IndexPage({
                           <div key={r.id} className="horse-result-row">
                             <span className="horse-result-medal">{medal ?? ''}</span>
                             <span className="horse-result-name">{r.username}</span>
-                            <span className="horse-result-meta">{formatDateShort(r.predicted_date)}</span>
-                            <span className="horse-result-meta">${r.bet_amount}</span>
-                            <span className="horse-result-meta">bet {formatDateShort(r.submitted_at)}</span>
-                            <span className="horse-result-meta">{r.score.toFixed(2)}pts</span>
+                            <span className="horse-result-meta">
+                              predicted <strong>{formatDateShort(r.predicted_date)}</strong> wagered <strong>${r.bet_amount}</strong> on <strong>{formatDateShort(r.submitted_at)}</strong>
+                            </span>
                             {r.payout > 0 && (
                               <span className="horse-result-payout">→ ${Math.round(r.payout)}</span>
                             )}
@@ -404,7 +401,7 @@ export default function IndexPage({
                 <li key={b.id} className="bet-log-entry">
                   <span className="bet-log-date">{formatDate(b.submitted_at)}</span>
                   <span className="bet-log-text">
-                    <strong>{b.username}</strong> predicted <strong>{formatDateShort(b.predicted_date)}</strong> wagered <strong>${b.bet_amount}</strong> on <strong>{b.guest_name}</strong>
+                    <strong>{b.username}</strong> bet <strong>${b.bet_amount}</strong> on <strong>{b.guest_name}</strong>
                   </span>
                 </li>
               ))}
