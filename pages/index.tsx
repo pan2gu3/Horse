@@ -293,7 +293,7 @@ export default function IndexPage({
           <div className="info-section">
             <h3>Rules</h3>
             <ul className="info-rules">
-              <li>Place a prediction for when you think each horse will buy their flight tickets to NCE (or Europe).</li>
+              <li>Place a prediction for when you think each laggard will buy their flight tickets to NCE (or Europe).</li>
             </ul>
           </div>
 
@@ -367,6 +367,7 @@ export default function IndexPage({
                             <span className="horse-result-meta">
                               predicted <strong>{formatDateShort(r.predicted_date)}</strong> wagered <strong>${r.bet_amount}</strong> on <strong>{formatDateShort(r.submitted_at)}</strong>
                             </span>
+                            <span className="horse-result-meta">{r.score.toFixed(2)}pts</span>
                             {r.payout > 0 && (
                               <span className="horse-result-payout">→ ${Math.round(r.payout)}</span>
                             )}
