@@ -2,7 +2,6 @@ import { GetServerSideProps } from 'next';
 import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import confetti from 'canvas-confetti';
 import { getSession } from '../lib/session';
 import { supabase } from '../lib/supabase';
 import type { Event, Guest, Prediction } from '../lib/types';
@@ -201,15 +200,15 @@ export default function IndexPage({
 
     setModalOpen(false);
 
-    // Rain confetti then reload
-    const end = Date.now() + 2500;
+    // Fire confetti then reload after 3s
+    const { default: confetti } = await import('canvas-confetti');
     const colors = ['#ff4b4b', '#4b8fff', '#4bff91', '#ffcc4b', '#cc4bff'];
-    (function frame() {
-      confetti({ particleCount: 6, angle: 60, spread: 55, origin: { x: 0 }, colors });
-      confetti({ particleCount: 6, angle: 120, spread: 55, origin: { x: 1 }, colors });
-      if (Date.now() < end) requestAnimationFrame(frame);
-      else router.reload();
-    })();
+    confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 }, colors });
+    setTimeout(() => {
+      confetti({ angle: 60, spread: 60, particleCount: 60, origin: { x: 0 }, colors });
+      confetti({ angle: 120, spread: 60, particleCount: 60, origin: { x: 1 }, colors });
+    }, 300);
+    setTimeout(() => router.reload(), 3000);
   }
 
   async function handleLogout() {
