@@ -155,3 +155,175 @@ tr:last-child td {
   gap: 1rem;
   align-items: center;
 }
+
+/* Horses */
+.horses-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 1rem;
+}
+
+.horses-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.horses-total {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.horse-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.horse-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.65rem 0.75rem;
+  background: #f7f7f7;
+  border-radius: 6px;
+}
+
+.horse-rank-name {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.horse-rank {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #999;
+  width: 1.2rem;
+  text-align: center;
+}
+
+.horse-name {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.horse-stats {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.horse-betters {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.horse-pot {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #111;
+  min-width: 2.5rem;
+  text-align: right;
+}
+
+.place-bet-row {
+  display: flex;
+  justify-content: center;
+  padding-top: 0.5rem;
+}
+
+.betting-closed {
+  font-size: 0.9rem;
+  color: #888;
+  margin: 0;
+}
+
+/* Bet log */
+.bet-log {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.bet-log-entry {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  font-size: 0.9rem;
+}
+
+.bet-log-date {
+  color: #999;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-size: 0.8rem;
+}
+
+.bet-log-text {
+  color: #333;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 10px;
+  padding: 1.75rem;
+  width: 100%;
+  max-width: 440px;
+  position: relative;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+}
+
+.modal-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  font-size: 1rem;
+  color: #888;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: #111;
+  opacity: 1;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111;
+  color: #fff;
+  padding: 0.65rem 1.25rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  z-index: 200;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  animation: fadeInUp 0.2s ease;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
