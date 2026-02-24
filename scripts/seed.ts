@@ -32,7 +32,6 @@ async function seed() {
     .from('events')
     .insert({
       name: gameConfig.eventName,
-      wager_amount: gameConfig.wagerAmount,
       status: 'open',
     })
     .select()

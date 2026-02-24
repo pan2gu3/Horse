@@ -7,11 +7,17 @@ import { getSession } from '../lib/session';
 import { supabase } from '../lib/supabase';
 import type { Event, Guest, Prediction } from '../lib/types';
 
+const BETTING_WINDOW_DAYS = 28;
+const MIN_WAGER = 10;
+const MAX_WAGER = 100;
+
 interface Props {
   username: string;
   event: Event;
   guests: Guest[];
   existing: Prediction | null;
+  bettingOpen: boolean;
+  windowCloseDate: string;
 }
 
 export const getServerSideProps: GetServerSideProps<Props> = async ({ req, res }) => {
@@ -21,7 +27,6 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({ req, res }
     return { redirect: { destination: '/login', permanent: false } };
   }
 
-  // Load event
   const { data: event } = await supabase
     .from('events')
     .select('*')
@@ -29,22 +34,18 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({ req, res }
     .limit(1)
     .single();
 
-  if (!event) {
-    return { notFound: true };
-  }
+  if (!event) return { notFound: true };
 
   if (event.status === 'resolved') {
     return { redirect: { destination: '/results', permanent: false } };
   }
 
-  // Load guests
   const { data: guests } = await supabase
     .from('guests')
     .select('*')
     .eq('event_id', event.id)
     .order('name', { ascending: true });
 
-  // Load existing prediction for this user
   const { data: existing } = await supabase
     .from('predictions')
     .select('*')
@@ -52,20 +53,29 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({ req, res }
     .eq('event_id', event.id)
     .maybeSingle();
 
+  const windowCloseMs = new Date(event.created_at).getTime() + BETTING_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+  const bettingOpen = Date.now() <= windowCloseMs;
+  const windowCloseDate = new Date(windowCloseMs).toLocaleDateString('en-US', {
+    year: 'numeric', month: 'long', day: 'numeric',
+  });
+
   return {
     props: {
       username: session.user.username,
       event: event as Event,
       guests: (guests ?? []) as Guest[],
       existing: (existing ?? null) as Prediction | null,
+      bettingOpen,
+      windowCloseDate,
     },
   };
 };
 
-export default function IndexPage({ username, event, guests, existing }: Props) {
+export default function IndexPage({ username, event, guests, existing, bettingOpen, windowCloseDate }: Props) {
   const router = useRouter();
-  const [guestId, setGuestId] = useState(existing?.guest_id ?? '');
-  const [date, setDate] = useState(existing?.predicted_date ?? '');
+  const [guestId, setGuestId] = useState('');
+  const [date, setDate] = useState('');
+  const [betAmount, setBetAmount] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -74,16 +84,18 @@ export default function IndexPage({ username, event, guests, existing }: Props) 
     e.preventDefault();
     setError('');
     setSuccess('');
-    setLoading(true);
 
+    const wager = Number(betAmount);
+    if (!Number.isInteger(wager) || wager < MIN_WAGER || wager > MAX_WAGER) {
+      setError(`Bet must be a whole number between $${MIN_WAGER} and $${MAX_WAGER}`);
+      return;
+    }
+
+    setLoading(true);
     const res = await fetch('/api/predict', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        event_id: event.id,
-        guest_id: guestId,
-        predicted_date: date,
-      }),
+      body: JSON.stringify({ event_id: event.id, guest_id: guestId, predicted_date: date, bet_amount: wager }),
     });
 
     const data = await res.json() as { error?: string };
@@ -94,13 +106,16 @@ export default function IndexPage({ username, event, guests, existing }: Props) 
       return;
     }
 
-    setSuccess(existing ? 'Prediction updated!' : 'Prediction submitted!');
+    setSuccess('Prediction locked in!');
+    router.reload();
   }
 
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' });
     await router.push('/login');
   }
+
+  const existingGuest = guests.find((g) => g.id === existing?.guest_id);
 
   return (
     <>
@@ -112,56 +127,77 @@ export default function IndexPage({ username, event, guests, existing }: Props) 
           <h1>{event.name}</h1>
           <div className="nav-links">
             <span>Hi, {username}</span>
-            <button className="btn-secondary" onClick={handleLogout}>
-              Log Out
-            </button>
+            <button className="btn-secondary" onClick={handleLogout}>Log Out</button>
           </div>
         </div>
 
-        <div className="card">
-          <h2>Your Prediction</h2>
-          <p>
-            Who will book their hotel last? Each player puts in ${event.wager_amount}.
-            Payouts are weighted by how close you are to the actual date.
-          </p>
-          <form onSubmit={handleSubmit}>
-            <label>
-              Who books last?
-              <select
-                value={guestId}
-                onChange={(e) => setGuestId(e.target.value)}
-                required
-              >
-                <option value="" disabled>
-                  Select a guest…
-                </option>
-                {guests.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              On what date will they book?
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                required
-              />
-            </label>
-            {error && <p className="error">{error}</p>}
-            {success && <p className="success">{success}</p>}
-            <button type="submit" disabled={loading}>
-              {loading ? 'Saving…' : existing ? 'Update Prediction' : 'Submit Prediction'}
-            </button>
-          </form>
-        </div>
+        {existing ? (
+          <div className="card">
+            <h2>Your Prediction</h2>
+            <p>Your prediction is locked. Good luck!</p>
+            <table>
+              <tbody>
+                <tr><th>Horse</th><td>{existingGuest?.name ?? '—'}</td></tr>
+                <tr><th>Predicted date</th><td>{existing.predicted_date}</td></tr>
+                <tr><th>Wager</th><td>${existing.bet_amount}</td></tr>
+                <tr><th>Submitted</th><td>{new Date(existing.submitted_at).toLocaleString()}</td></tr>
+              </tbody>
+            </table>
+          </div>
+        ) : !bettingOpen ? (
+          <div className="card">
+            <h2>Betting Closed</h2>
+            <p>The 28-day betting window closed on {windowCloseDate}. No more predictions are accepted.</p>
+          </div>
+        ) : (
+          <div className="card">
+            <h2>Place Your Bet</h2>
+            <p>
+              Pick your horse, predict when they&apos;ll book, and set your wager (${MIN_WAGER}–${MAX_WAGER}).
+              Betting window closes <strong>{windowCloseDate}</strong>. <strong>Predictions are final.</strong>
+            </p>
+            <form onSubmit={handleSubmit}>
+              <label>
+                Horse
+                <select value={guestId} onChange={(e) => setGuestId(e.target.value)} required>
+                  <option value="" disabled>Select a horse…</option>
+                  {guests.map((g) => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Predicted booking date
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Wager (${MIN_WAGER}–${MAX_WAGER})
+                <input
+                  type="number"
+                  min={MIN_WAGER}
+                  max={MAX_WAGER}
+                  step={1}
+                  value={betAmount}
+                  onChange={(e) => setBetAmount(e.target.value)}
+                  placeholder="e.g. 50"
+                  required
+                />
+              </label>
+              {error && <p className="error">{error}</p>}
+              {success && <p className="success">{success}</p>}
+              <button type="submit" disabled={loading}>
+                {loading ? 'Locking in…' : 'Lock In Prediction'}
+              </button>
+            </form>
+          </div>
+        )}
 
-        <p>
-          <Link href="/results">View results</Link> (visible once event is resolved)
-        </p>
+        <p><Link href="/results">View results</Link> (visible once event is resolved)</p>
       </div>
     </>
   );

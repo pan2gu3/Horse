@@ -1,6 +1,5 @@
 const gameConfig = {
   eventName: "Connor's Bachelor Party",
-  wagerAmount: 20,
   guests: [
     "Alex",
     "Bryan",

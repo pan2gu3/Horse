@@ -82,12 +82,11 @@ All vars live in `.env.local` (gitignored). Never commit this file.
 ## Database schema
 
 ```
-events        id, name, wager_amount, status ('open'|'resolved'),
-              actual_final_guest_id, actual_booking_date, created_at
-guests        id, event_id → events, name
+events        id, name, status ('open'|'resolved'), created_at
+guests        id, event_id → events, name, actual_booking_date DATE
 users         id, username (unique), password_hash, created_at
 predictions   id, user_id → users, event_id → events, guest_id → guests,
-              predicted_date, submitted_at
+              predicted_date DATE, bet_amount INTEGER, submitted_at
               UNIQUE (user_id, event_id)
 ```
 
@@ -98,13 +97,21 @@ predictions   id, user_id → users, event_id → events, guest_id → guests,
 ## Scoring formula
 
 ```
-Score  = wager / (1 + |predicted_date − actual_date| in days)
-       = 0  if wrong guest predicted
+E = |predicted_date − horse's actual_booking_date| in days
+t = (submitted_at − events.created_at) in hours ÷ 24, capped to [0, 28]
+M = 3 − (t / 14)    → ranges 3.0 (day 0) to 1.0 (day 28)
+S = (W / (1 + E)) × M
 
-Payout = (player_score / sum_of_all_scores) × (wager × num_players)
+Pot   = sum of all wagers
+Top 1 = 0.75 × Pot
+Top 2 = 0.25 × Pot
+All others = 0
+
+Tiebreaker: higher W → lower E → split evenly
+Minimum 3 players required for results to be valid.
 ```
 
-If nobody guesses the correct guest, all payouts are 0. See `lib/scoring.ts`.
+See `lib/scoring.ts`.
 
 ---
 
@@ -125,12 +132,18 @@ npm run build        # production build (requires .env.local)
 npm run seed         # seed DB with event + guests (idempotent, run once)
 ```
 
-**Resolve the event** (after hotel is booked):
+**Resolve the event** (input each horse's actual booking date):
 ```bash
 curl -X POST https://horse-five.vercel.app/api/admin/resolve \
   -H "Content-Type: application/json" \
   -H "x-admin-secret: de521e747d9e348e5f34b02ff0edafe3" \
-  -d '{"actual_guest_id": "<uuid from list below>", "actual_booking_date": "YYYY-MM-DD"}'
+  -d '{
+    "bookings": [
+      {"guest_id": "3d039cac-85f1-4196-829a-d1e29197483e", "actual_booking_date": "YYYY-MM-DD"},
+      {"guest_id": "540a2c45-56b8-4d8e-bb03-67b381bda1e9", "actual_booking_date": "YYYY-MM-DD"},
+      {"guest_id": "5f9b95e6-4294-4240-85a8-2ff2b14ab0b2", "actual_booking_date": "YYYY-MM-DD"}
+    ]
+  }'
 ```
 
 **Guest UUIDs** (from seed — use these for the resolve command):
