@@ -156,6 +156,119 @@ tr:last-child td {
   align-items: center;
 }
 
+/* Info card */
+.info-card {
+  background: #fafafa;
+}
+
+.info-lead {
+  font-size: 1.05rem;
+  color: #222;
+  margin-bottom: 1.25rem;
+  line-height: 1.6;
+}
+
+.info-section {
+  margin-bottom: 1.25rem;
+}
+
+.info-section:last-child {
+  margin-bottom: 0;
+}
+
+.info-section h3 {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #888;
+  margin-bottom: 0.5rem;
+}
+
+.info-rules {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding-left: 0;
+}
+
+.info-rules li {
+  font-size: 0.9rem;
+  color: #444;
+  line-height: 1.5;
+  padding-left: 0.25rem;
+}
+
+/* Formula */
+.formula-block {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+}
+
+.formula-main {
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.85rem;
+  font-family: 'Georgia', serif;
+}
+
+.formula-var {
+  font-style: italic;
+  font-weight: 600;
+  color: #0070f3;
+}
+
+.formula-frac {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: middle;
+  margin: 0 0.15rem;
+  line-height: 1.1;
+}
+
+.formula-num {
+  border-bottom: 1.5px solid #333;
+  padding: 0 0.2rem 0.1rem;
+  font-size: 0.95rem;
+}
+
+.formula-den {
+  padding: 0.1rem 0.2rem 0;
+  font-size: 0.95rem;
+}
+
+.formula-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  border-top: 1px solid #eee;
+  padding-top: 0.75rem;
+}
+
+.formula-legend > div {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.formula-legend dt {
+  min-width: 1.2rem;
+  font-family: 'Georgia', serif;
+}
+
+.formula-legend dd {
+  color: #555;
+  margin: 0;
+}
+
 /* Horses */
 .horses-header {
   display: flex;

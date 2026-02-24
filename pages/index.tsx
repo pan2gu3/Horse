@@ -224,6 +224,51 @@ export default function IndexPage({
           </div>
         </div>
 
+        {/* Info */}
+        <div className="card info-card">
+          <p className="info-lead">
+            Place bets on when each of these <em>(slow)</em> horses will book flights for Ryan&apos;s bachelor party.
+          </p>
+
+          <div className="info-section">
+            <h3>Rules</h3>
+            <ul className="info-rules">
+              <li>Place a prediction for when you think each horse will buy their flight tickets to NCE (or Europe).</li>
+              <li>Scoring depends on how close you are to the actual booking day, your bet size, and how early you place your prediction.</li>
+            </ul>
+          </div>
+
+          <div className="info-section">
+            <h3>Scoring</h3>
+            <div className="formula-block">
+              <div className="formula-main">
+                <span className="formula-var">S</span>
+                {' = '}
+                <span className="formula-frac">
+                  <span className="formula-num"><span className="formula-var">W</span></span>
+                  <span className="formula-den">1 + <span className="formula-var">E</span></span>
+                </span>
+                {' × (3 − '}
+                <span className="formula-var">t</span>
+                {' / 14)'}
+              </div>
+              <dl className="formula-legend">
+                <div><dt><span className="formula-var">E</span></dt><dd>|predicted date − actual booking date| in days</dd></div>
+                <div><dt><span className="formula-var">t</span></dt><dd>days since the market opened (capped at 28)</dd></div>
+                <div><dt><span className="formula-var">W</span></dt><dd>your wager ($10–$100)</dd></div>
+              </dl>
+            </div>
+          </div>
+
+          <div className="info-section">
+            <h3>Payouts</h3>
+            <ul className="info-rules">
+              <li>🥇 Highest score for each horse wins <strong>75%</strong> of that horse&apos;s pot.</li>
+              <li>🥈 Second highest wins <strong>25%</strong>.</li>
+            </ul>
+          </div>
+        </div>
+
         {/* Horses */}
         <div className="card">
           <div className="horses-header">
