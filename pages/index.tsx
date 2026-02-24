@@ -235,7 +235,7 @@ export default function IndexPage({
 
           <div className="info-section">
             <h3>Scoring</h3>
-            <p className="info-scoring-desc">Scoring depends on how close you are to the actual booking day, your bet size, and how early you place your prediction.</p>
+            <p className="info-scoring-desc">Scoring depends on your prediction date, your bet size, and how early you place your prediction. Being close on the prediction date matters most but you do receive slight advantages to having larger bet sizes and betting early.</p>
             <p className="info-nerds">For the nerds:</p>
             <div className="formula-block">
               <div className="formula-main">
