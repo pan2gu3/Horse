@@ -108,6 +108,15 @@ If nobody guesses the correct guest, all payouts are 0. See `lib/scoring.ts`.
 
 ---
 
+## Deployment
+
+- **Production URL:** https://horse-five.vercel.app
+- **Vercel project:** connors-projects-12c35c8d/horse
+- **Supabase project:** https://pjopffkeopubnpjgbkrn.supabase.co
+- **GitHub:** https://github.com/pan2gu3/Horse (auto-deploys on push to `main`)
+
+---
+
 ## Common commands
 
 ```bash
@@ -118,13 +127,33 @@ npm run seed         # seed DB with event + guests (idempotent, run once)
 
 **Resolve the event** (after hotel is booked):
 ```bash
-curl -X POST https://your-app.vercel.app/api/admin/resolve \
+curl -X POST https://horse-five.vercel.app/api/admin/resolve \
   -H "Content-Type: application/json" \
-  -H "x-admin-secret: YOUR_ADMIN_SECRET" \
-  -d '{"actual_guest_id": "<uuid>", "actual_booking_date": "YYYY-MM-DD"}'
+  -H "x-admin-secret: de521e747d9e348e5f34b02ff0edafe3" \
+  -d '{"actual_guest_id": "<uuid from list below>", "actual_booking_date": "YYYY-MM-DD"}'
 ```
 
-Get guest UUIDs from Supabase: `SELECT id, name FROM guests;`
+**Guest UUIDs** (from seed — use these for the resolve command):
+```
+a6c54999-d082-40df-a62d-d2ef95e34fca  Andrew
+9ebf5f57-fbcd-4e4a-b272-3b678a507a28  Ben
+666f683f-a767-479c-9af4-88b861c049a6  Blake
+8a1de794-2128-4c53-8dd2-a7aef078db05  Brad
+0b128803-a352-438b-8b43-8e00996fd7af  Connor
+0afe3d38-92e6-4284-8bfb-58b7c07ca822  Dan
+2744be0c-73cb-44b3-b7e2-71d34c7b8886  Drew
+d4041c2a-9a41-46f2-841f-56f5d28d65a3  Jake
+31cb94c4-5922-4c6c-b679-a6c3876aa954  Jared
+e503b713-eccc-4ce6-8f1d-373b5bdd417e  Kevin
+79b6e428-189e-4227-986d-a4b82aede302  Kyle
+88bd7b9d-a8b2-4b93-af66-029c19d77f55  Matt
+16b11717-f8f2-429c-87a6-e3e6f18e46c2  Mike
+c7645cc7-b5a1-4406-8e22-fa35ecc24092  Nick
+e8101fd3-0071-4012-a92a-a055f64d2478  Ryan
+2d4b932b-2c19-429d-80f3-997046df6e43  Scott
+5935939d-7241-41e2-8c0f-fe60bad53950  Tim
+601a0c63-3508-4551-a628-caa4632b3ce7  Tom
+```
 
 ---
 
@@ -133,7 +162,7 @@ Get guest UUIDs from Supabase: `SELECT id, name FROM guests;`
 - **`next.config.mjs` not `.ts`** — Next.js 14 doesn't support TypeScript config files.
 - **iron-session v8**: `SessionOptions` (not `IronSessionOptions`), `getIronSession<T>()` with explicit type param. No module augmentation.
 - **Supabase joins**: `.select('*, users(username)')` returns typed arrays that need `as unknown as RawRow[]` casting.
-- **Build without `.env.local`**: `next build` fails locally without env vars (Supabase client initializes at module eval time). This is fine — Vercel sets env vars before building.
+- **Lazy Supabase client**: Both `lib/supabase.ts` and `lib/supabasePublic.ts` use a Proxy to defer `createClient()` until first property access. This prevents build failures when env vars aren't available at module evaluation time.
 - **Timing attack prevention**: Login always runs `bcrypt.compare` even when user not found (uses a dummy hash).
 - **game.config.ts is seeded once**: DB is authoritative at runtime. Don't update config and re-seed (it's idempotent — it exits early if the event already exists).
 
