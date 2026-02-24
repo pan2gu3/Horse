@@ -10,11 +10,21 @@ const BETTING_WINDOW_DAYS = 28;
 const MIN_WAGER = 10;
 const MAX_WAGER = 100;
 
+// CSS filters applied in alphabetical name order — stable regardless of pot ranking
+const HORSE_FILTERS = [
+  'sepia(1) saturate(5) hue-rotate(330deg)',  // red
+  'sepia(1) saturate(5) hue-rotate(195deg)',  // blue
+  'sepia(1) saturate(5) hue-rotate(75deg)',   // green
+  'sepia(1) saturate(5) hue-rotate(260deg)',  // purple
+  'sepia(1) saturate(5) hue-rotate(20deg)',   // orange
+];
+
 interface HorseStat {
   id: string;
   name: string;
   betters: number;
   pot: number;
+  colorIndex: number;
 }
 
 interface BetLogEntry {
@@ -79,10 +89,10 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({ req, res }
 
   const preds = ((allPredictions ?? []) as unknown as RawPred[]);
 
-  // Aggregate per horse
+  // Aggregate per horse — colorIndex based on alphabetical position (stable)
   const statMap = new Map<string, HorseStat>();
-  for (const g of (guests ?? [])) {
-    statMap.set(g.id, { id: g.id, name: g.name, betters: 0, pot: 0 });
+  for (const [i, g] of (guests ?? []).entries()) {
+    statMap.set(g.id, { id: g.id, name: g.name, betters: 0, pot: 0, colorIndex: i });
   }
   for (const p of preds) {
     const stat = statMap.get(p.guest_id);
@@ -231,6 +241,10 @@ export default function IndexPage({
               <div key={h.id} className="horse-row">
                 <div className="horse-rank-name">
                   <span className="horse-rank">{i + 1}</span>
+                  <span
+                    className="horse-emoji"
+                    style={{ filter: HORSE_FILTERS[h.colorIndex % HORSE_FILTERS.length] }}
+                  >🐴</span>
                   <span className="horse-name">{h.name}</span>
                 </div>
                 <div className="horse-stats">

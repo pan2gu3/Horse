@@ -204,6 +204,11 @@ tr:last-child td {
   text-align: center;
 }
 
+.horse-emoji {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
 .horse-name {
   font-weight: 600;
   font-size: 1rem;
