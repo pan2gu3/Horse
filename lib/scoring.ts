@@ -29,7 +29,7 @@ export function computeScore(
 
   const M = 1 + ALPHA * (1 - tDays / T); // = 3 - (t / 14)
 
-  return (prediction.bet_amount / (1 + E)) * M;
+  return (Math.sqrt(prediction.bet_amount) / (1 + E)) * M;
 }
 
 export interface ScoredPrediction extends PredictionWithDetails {

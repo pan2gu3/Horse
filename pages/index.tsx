@@ -306,7 +306,7 @@ export default function IndexPage({
                 <span className="formula-var">S</span>
                 {' = '}
                 <span className="formula-frac">
-                  <span className="formula-num"><span className="formula-var">W</span></span>
+                  <span className="formula-num">√<span className="formula-var">W</span></span>
                   <span className="formula-den">1 + <span className="formula-var">E</span></span>
                 </span>
                 {' × (3 − '}
@@ -316,7 +316,7 @@ export default function IndexPage({
               <dl className="formula-legend">
                 <div><dt><span className="formula-var">E</span></dt><dd>|predicted date − actual booking date| in days</dd></div>
                 <div><dt><span className="formula-var">t</span></dt><dd>days since the market opened (capped at 28)</dd></div>
-                <div><dt><span className="formula-var">W</span></dt><dd>your wager ($10–$100)</dd></div>
+                <div><dt><span className="formula-var">W</span></dt><dd>your wager ($10–$100) — square-rooted to reduce its effect</dd></div>
               </dl>
             </div>
           </div>
