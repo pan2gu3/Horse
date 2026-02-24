@@ -226,20 +226,17 @@ export default function IndexPage({
 
         {/* Info */}
         <div className="card info-card">
-          <p className="info-lead">
-            Place bets on when each of these <em>(slow)</em> horses will book flights for Ryan&apos;s bachelor party.
-          </p>
-
           <div className="info-section">
             <h3>Rules</h3>
             <ul className="info-rules">
               <li>Place a prediction for when you think each horse will buy their flight tickets to NCE (or Europe).</li>
-              <li>Scoring depends on how close you are to the actual booking day, your bet size, and how early you place your prediction.</li>
             </ul>
           </div>
 
           <div className="info-section">
             <h3>Scoring</h3>
+            <p className="info-scoring-desc">Scoring depends on how close you are to the actual booking day, your bet size, and how early you place your prediction.</p>
+            <p className="info-nerds">For the nerds:</p>
             <div className="formula-block">
               <div className="formula-main">
                 <span className="formula-var">S</span>

@@ -161,13 +161,6 @@ tr:last-child td {
   background: #fafafa;
 }
 
-.info-lead {
-  font-size: 1.05rem;
-  color: #222;
-  margin-bottom: 1.25rem;
-  line-height: 1.6;
-}
-
 .info-section {
   margin-bottom: 1.25rem;
 }
@@ -198,6 +191,20 @@ tr:last-child td {
   color: #444;
   line-height: 1.5;
   padding-left: 0.25rem;
+}
+
+.info-scoring-desc {
+  font-size: 0.9rem;
+  color: #444;
+  line-height: 1.5;
+  margin-bottom: 0.6rem;
+}
+
+.info-nerds {
+  font-size: 0.85rem;
+  color: #888;
+  font-style: italic;
+  margin-bottom: 0.5rem;
 }
 
 /* Formula */
