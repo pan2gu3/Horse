@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { getSession } from '../lib/session';
 import { supabase } from '../lib/supabase';
+import { computePayoutsPerHorse } from '../lib/scoring';
 import type { Event, Guest } from '../lib/types';
 
 const BETTING_WINDOW_DAYS = 28;
@@ -35,6 +36,17 @@ interface BetLogEntry {
   submitted_at: string;
 }
 
+interface ResolvedPredRow {
+  id: string;
+  username: string;
+  predicted_date: string;
+  bet_amount: number;
+  submitted_at: string;
+  score: number;
+  payout: number;
+  rank: number;
+}
+
 interface Props {
   sessionUsername: string | null;
   event: Event;
@@ -43,6 +55,8 @@ interface Props {
   bettingOpen: boolean;
   windowCloseDate: string;
   guests: Guest[];
+  resolved: boolean;
+  resolvedByHorse: Record<string, ResolvedPredRow[]>;
 }
 
 export const getServerSideProps: GetServerSideProps<Props> = async ({ req, res }) => {
@@ -57,10 +71,6 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({ req, res }
 
   if (!event) return { notFound: true };
 
-  if (event.status === 'resolved') {
-    return { redirect: { destination: '/results', permanent: false } };
-  }
-
   const { data: guests } = await supabase
     .from('guests')
     .select('*')
@@ -70,20 +80,23 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({ req, res }
   const { data: allPredictions } = await supabase
     .from('predictions')
     .select(`
-      id, bet_amount, submitted_at, guest_id,
+      id, user_id, event_id, guest_id, predicted_date, bet_amount, submitted_at,
       users ( username ),
-      guests ( name )
+      guests ( name, actual_booking_date )
     `)
     .eq('event_id', event.id)
     .order('submitted_at', { ascending: false });
 
   type RawPred = {
     id: string;
+    user_id: string;
+    event_id: string;
+    guest_id: string;
+    predicted_date: string;
     bet_amount: number;
     submitted_at: string;
-    guest_id: string;
     users: { username: string } | null;
-    guests: { name: string } | null;
+    guests: { name: string; actual_booking_date: string | null } | null;
   };
 
   const preds = ((allPredictions ?? []) as unknown as RawPred[]);
@@ -109,10 +122,50 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({ req, res }
   }));
 
   const windowCloseMs = new Date(event.created_at).getTime() + BETTING_WINDOW_DAYS * 24 * 60 * 60 * 1000;
-  const bettingOpen = Date.now() <= windowCloseMs;
+  const bettingOpen = event.status === 'open' && Date.now() <= windowCloseMs;
   const windowCloseDate = new Date(windowCloseMs).toLocaleDateString('en-US', {
     year: 'numeric', month: 'long', day: 'numeric',
   });
+
+  // When resolved, compute per-horse scored results
+  let resolvedByHorse: Record<string, ResolvedPredRow[]> = {};
+  if (event.status === 'resolved') {
+    const predWithDetails = preds.map((p) => ({
+      id: p.id,
+      user_id: p.user_id,
+      event_id: p.event_id,
+      guest_id: p.guest_id,
+      predicted_date: p.predicted_date,
+      bet_amount: p.bet_amount,
+      submitted_at: p.submitted_at,
+      username: p.users?.username ?? 'Unknown',
+      guest_name: p.guests?.name ?? 'Unknown',
+      actual_booking_date: p.guests?.actual_booking_date ?? null,
+    }));
+
+    const scored = computePayoutsPerHorse(predWithDetails, event.created_at);
+
+    // Group by guest_id, sort by score desc, assign rank
+    const grouped: Record<string, ResolvedPredRow[]> = {};
+    for (const p of scored) {
+      if (!grouped[p.guest_id]) grouped[p.guest_id] = [];
+      grouped[p.guest_id]!.push({
+        id: p.id,
+        username: p.username,
+        predicted_date: p.predicted_date,
+        bet_amount: p.bet_amount,
+        submitted_at: p.submitted_at,
+        score: p.score,
+        payout: p.payout,
+        rank: 0,
+      });
+    }
+    for (const rows of Object.values(grouped)) {
+      rows.sort((a, b) => b.score - a.score);
+      rows.forEach((r, i) => { r.rank = i + 1; });
+    }
+    resolvedByHorse = grouped;
+  }
 
   return {
     props: {
@@ -123,6 +176,8 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({ req, res }
       bettingOpen,
       windowCloseDate,
       guests: (guests ?? []) as Guest[],
+      resolved: event.status === 'resolved',
+      resolvedByHorse,
     },
   };
 };
@@ -133,8 +188,15 @@ function formatDate(iso: string): string {
   });
 }
 
+function formatDateShort(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric',
+  });
+}
+
 export default function IndexPage({
   sessionUsername, event, horses, betLog, bettingOpen, windowCloseDate, guests,
+  resolved, resolvedByHorse,
 }: Props) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
@@ -273,26 +335,55 @@ export default function IndexPage({
             <span className="horses-total">Total pot: <strong>${totalPot}</strong></span>
           </div>
           <div className="horse-list">
-            {horses.map((h, i) => (
-              <div key={h.id} className="horse-row">
-                <div className="horse-rank-name">
-                  <span className="horse-rank">{i + 1}</span>
-                  <span
-                    className="horse-emoji"
-                    style={{ filter: HORSE_FILTERS[h.colorIndex % HORSE_FILTERS.length] }}
-                  >🐴</span>
-                  <span className="horse-name">{h.name}</span>
+            {horses.map((h, i) => {
+              const horseResults = resolved ? (resolvedByHorse[h.id] ?? []) : [];
+              return (
+                <div key={h.id} className={resolved ? 'horse-item' : undefined}>
+                  <div className="horse-row">
+                    <div className="horse-rank-name">
+                      <span className="horse-rank">{i + 1}</span>
+                      <span
+                        className="horse-emoji"
+                        style={{ filter: HORSE_FILTERS[h.colorIndex % HORSE_FILTERS.length] }}
+                      >🐴</span>
+                      <span className="horse-name">{h.name}</span>
+                    </div>
+                    <div className="horse-stats">
+                      <span className="horse-betters">{h.betters} {h.betters === 1 ? 'better' : 'betters'}</span>
+                      <span className="horse-pot">${h.pot}</span>
+                    </div>
+                  </div>
+                  {resolved && horseResults.length > 0 && (
+                    <div className="horse-results">
+                      {horseResults.map((r) => {
+                        const medal = r.rank === 1 ? '🥇' : r.rank === 2 ? '🥈' : null;
+                        return (
+                          <div key={r.id} className="horse-result-row">
+                            <span className="horse-result-medal">{medal ?? ''}</span>
+                            <span className="horse-result-name">{r.username}</span>
+                            <span className="horse-result-meta">{formatDateShort(r.predicted_date)}</span>
+                            <span className="horse-result-meta">${r.bet_amount}</span>
+                            <span className="horse-result-meta">bet {formatDateShort(r.submitted_at)}</span>
+                            <span className="horse-result-meta">{r.score.toFixed(2)}pts</span>
+                            {r.payout > 0 && (
+                              <span className="horse-result-payout">→ ${Math.round(r.payout)}</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-                <div className="horse-stats">
-                  <span className="horse-betters">{h.betters} {h.betters === 1 ? 'better' : 'betters'}</span>
-                  <span className="horse-pot">${h.pot}</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="place-bet-row">
-            {bettingOpen ? (
+            {resolved ? (
+              <button className="btn-secondary" disabled style={{ cursor: 'not-allowed', opacity: 0.5 }}>
+                Betting Closed
+              </button>
+            ) : bettingOpen ? (
               <button className="btn-primary" onClick={handlePlaceBet}>+ Place Bet</button>
             ) : (
               <p className="betting-closed">Betting closed {windowCloseDate}</p>

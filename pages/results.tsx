@@ -2,7 +2,7 @@ import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import { supabase } from '../lib/supabase';
-import { computePayouts, ScoredPrediction, dateDiffDays } from '../lib/scoring';
+import { computePayoutsPerHorse, ScoredPrediction, dateDiffDays } from '../lib/scoring';
 import type { Event } from '../lib/types';
 
 const MIN_PLAYERS = 3;
@@ -60,7 +60,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async () => {
     actual_booking_date: p.guests?.actual_booking_date ?? null,
   }));
 
-  const results = computePayouts(predWithDetails, event.created_at)
+  const results = computePayoutsPerHorse(predWithDetails, event.created_at)
     .sort((a, b) => b.score - a.score);
 
   const totalPot = predWithDetails.reduce((sum, p) => sum + p.bet_amount, 0);

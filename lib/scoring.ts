@@ -2,7 +2,6 @@ import type { PredictionWithDetails } from './types';
 
 const T = 28;       // betting window in days
 const ALPHA = 2.0;
-const MIN_PLAYERS = 3;
 const PAYOUT_SPLITS = [0.75, 0.25];
 
 export function dateDiffDays(dateA: string, dateB: string): number {
@@ -39,7 +38,11 @@ export interface ScoredPrediction extends PredictionWithDetails {
   net: number;
 }
 
-export function computePayouts(
+/**
+ * Computes scores and payouts per horse. Each horse's pot is distributed
+ * independently: top scorer gets 75%, second gets 25%.
+ */
+export function computePayoutsPerHorse(
   predictions: PredictionWithDetails[],
   marketOpenTimestamp: string
 ): ScoredPrediction[] {
@@ -47,57 +50,57 @@ export function computePayouts(
     ...p,
     score: computeScore(p, marketOpenTimestamp),
     payout: 0,
-    net: 0,
+    net: -p.bet_amount,
   }));
 
-  if (scored.length < MIN_PLAYERS) {
-    return scored;
+  // Group by guest_id (horse)
+  const byHorse = new Map<string, ScoredPrediction[]>();
+  for (const p of scored) {
+    const group = byHorse.get(p.guest_id) ?? [];
+    group.push(p);
+    byHorse.set(p.guest_id, group);
   }
 
-  const totalPot = scored.reduce((sum, p) => sum + p.bet_amount, 0);
+  // For each horse, distribute payouts within the group
+  for (const group of byHorse.values()) {
+    const horsePot = group.reduce((sum, p) => sum + p.bet_amount, 0);
 
-  // Sort by score desc, then tiebreakers
-  const sorted = [...scored].sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
-    if (b.bet_amount !== a.bet_amount) return b.bet_amount - a.bet_amount;
-    const eA = a.actual_booking_date ? dateDiffDays(a.predicted_date, a.actual_booking_date) : Infinity;
-    const eB = b.actual_booking_date ? dateDiffDays(b.predicted_date, b.actual_booking_date) : Infinity;
-    return eA - eB;
-  });
+    // Sort by score desc, tiebreakers: higher wager → lower date error
+    const sorted = [...group].sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      if (b.bet_amount !== a.bet_amount) return b.bet_amount - a.bet_amount;
+      const eA = a.actual_booking_date ? dateDiffDays(a.predicted_date, a.actual_booking_date) : Infinity;
+      const eB = b.actual_booking_date ? dateDiffDays(b.predicted_date, b.actual_booking_date) : Infinity;
+      return eA - eB;
+    });
 
-  // Assign payouts respecting ties at each payout tier
-  let i = 0;
-  for (let tier = 0; tier < PAYOUT_SPLITS.length && i < sorted.length; tier++) {
-    const tierScore = sorted[i]!.score;
+    // Assign payouts respecting ties at each payout tier
+    // sorted holds references to the same objects in scored, so mutations propagate
+    let i = 0;
+    for (let tier = 0; tier < PAYOUT_SPLITS.length && i < sorted.length; tier++) {
+      const tierScore = sorted[i]!.score;
 
-    // Find all tied at this score
-    let j = i;
-    while (j < sorted.length && sorted[j]!.score === tierScore) j++;
+      let j = i;
+      while (j < sorted.length && sorted[j]!.score === tierScore) j++;
 
-    const tiedCount = j - i;
-    const tiersConsumed = Math.min(tiedCount, PAYOUT_SPLITS.length - tier);
+      const tiedCount = j - i;
+      const tiersConsumed = Math.min(tiedCount, PAYOUT_SPLITS.length - tier);
 
-    // Sum the payout fractions consumed by these tied players
-    let tierPot = 0;
-    for (let k = tier; k < tier + tiersConsumed; k++) {
-      tierPot += PAYOUT_SPLITS[k]! * totalPot;
+      let tierPot = 0;
+      for (let k = tier; k < tier + tiersConsumed; k++) {
+        tierPot += PAYOUT_SPLITS[k]! * horsePot;
+      }
+
+      const payoutEach = tierPot / tiedCount;
+      for (let k = i; k < j; k++) {
+        sorted[k]!.payout = payoutEach;
+        sorted[k]!.net = payoutEach - sorted[k]!.bet_amount;
+      }
+
+      i = j;
+      tier += tiersConsumed - 1; // -1 because loop will increment
     }
-
-    const payoutEach = tierPot / tiedCount;
-    for (let k = i; k < j; k++) {
-      sorted[k]!.payout = payoutEach;
-      sorted[k]!.net = payoutEach - sorted[k]!.bet_amount;
-    }
-
-    i = j;
-    tier += tiersConsumed - 1; // -1 because loop will increment
   }
 
-  // Map payouts back to original order
-  const payoutById = new Map(sorted.map((p) => [p.id, { payout: p.payout, net: p.net }]));
-  return scored.map((p) => ({
-    ...p,
-    payout: payoutById.get(p.id)?.payout ?? 0,
-    net: payoutById.get(p.id)?.net ?? -p.bet_amount,
-  }));
+  return scored;
 }
