@@ -2,6 +2,7 @@ import { GetServerSideProps } from 'next';
 import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import confetti from 'canvas-confetti';
 import { getSession } from '../lib/session';
 import { supabase } from '../lib/supabase';
 import type { Event, Guest, Prediction } from '../lib/types';
@@ -199,7 +200,16 @@ export default function IndexPage({
     }
 
     setModalOpen(false);
-    router.reload();
+
+    // Rain confetti then reload
+    const end = Date.now() + 2500;
+    const colors = ['#ff4b4b', '#4b8fff', '#4bff91', '#ffcc4b', '#cc4bff'];
+    (function frame() {
+      confetti({ particleCount: 6, angle: 60, spread: 55, origin: { x: 0 }, colors });
+      confetti({ particleCount: 6, angle: 120, spread: 55, origin: { x: 1 }, colors });
+      if (Date.now() < end) requestAnimationFrame(frame);
+      else router.reload();
+    })();
   }
 
   async function handleLogout() {
