@@ -33,6 +33,7 @@ interface BetLogEntry {
   username: string;
   bet_amount: number;
   guest_name: string;
+  predicted_date: string;
   submitted_at: string;
 }
 
@@ -118,6 +119,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({ req, res }
     username: p.users?.username ?? 'Unknown',
     bet_amount: p.bet_amount,
     guest_name: p.guests?.name ?? 'Unknown',
+    predicted_date: p.predicted_date,
     submitted_at: p.submitted_at,
   }));
 
@@ -402,7 +404,7 @@ export default function IndexPage({
                 <li key={b.id} className="bet-log-entry">
                   <span className="bet-log-date">{formatDate(b.submitted_at)}</span>
                   <span className="bet-log-text">
-                    <strong>{b.username}</strong> bet <strong>${b.bet_amount}</strong> on <strong>{b.guest_name}</strong>
+                    <strong>{b.username}</strong> predicted <strong>{formatDateShort(b.predicted_date)}</strong> wagered <strong>${b.bet_amount}</strong> on <strong>{b.guest_name}</strong>
                   </span>
                 </li>
               ))}
