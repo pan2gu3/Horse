@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "seed": "dotenv -e .env.local -- tsx scripts/seed.ts"
+    "seed": "dotenv -e .env.local -- tsx scripts/seed.ts",
+    "reset": "dotenv -e .env.local -- tsx scripts/reset.ts",
+    "fresh": "npm run reset && npm run seed"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.2",
