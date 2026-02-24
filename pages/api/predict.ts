@@ -62,18 +62,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (!guest) return res.status(400).json({ error: 'Guest not found in this event' });
 
-  // Check prediction doesn't already exist (locked — no updates)
-  const { data: existing } = await supabase
-    .from('predictions')
-    .select('id')
-    .eq('user_id', session.user.id)
-    .eq('event_id', event_id)
-    .maybeSingle();
-
-  if (existing) {
-    return res.status(400).json({ error: 'You have already submitted a prediction and it cannot be changed' });
-  }
-
   const { error } = await supabase.from('predictions').insert({
     user_id: session.user.id,
     event_id,

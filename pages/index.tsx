@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { getSession } from '../lib/session';
 import { supabase } from '../lib/supabase';
-import type { Event, Guest, Prediction } from '../lib/types';
+import type { Event, Guest } from '../lib/types';
 
 const BETTING_WINDOW_DAYS = 28;
 const MIN_WAGER = 10;
@@ -40,7 +40,6 @@ interface Props {
   event: Event;
   horses: HorseStat[];
   betLog: BetLogEntry[];
-  existing: Prediction | null;
   bettingOpen: boolean;
   windowCloseDate: string;
   guests: Guest[];
@@ -109,18 +108,6 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({ req, res }
     submitted_at: p.submitted_at,
   }));
 
-  // Existing prediction for logged-in user
-  let existing: Prediction | null = null;
-  if (session.user) {
-    const { data } = await supabase
-      .from('predictions')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .eq('event_id', event.id)
-      .maybeSingle();
-    existing = (data ?? null) as Prediction | null;
-  }
-
   const windowCloseMs = new Date(event.created_at).getTime() + BETTING_WINDOW_DAYS * 24 * 60 * 60 * 1000;
   const bettingOpen = Date.now() <= windowCloseMs;
   const windowCloseDate = new Date(windowCloseMs).toLocaleDateString('en-US', {
@@ -133,7 +120,6 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({ req, res }
       event: event as Event,
       horses,
       betLog,
-      existing,
       bettingOpen,
       windowCloseDate,
       guests: (guests ?? []) as Guest[],
@@ -148,7 +134,7 @@ function formatDate(iso: string): string {
 }
 
 export default function IndexPage({
-  sessionUsername, event, horses, betLog, existing, bettingOpen, windowCloseDate, guests,
+  sessionUsername, event, horses, betLog, bettingOpen, windowCloseDate, guests,
 }: Props) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
@@ -216,7 +202,6 @@ export default function IndexPage({
     router.push('/login');
   }
 
-  const existingGuest = guests.find((g) => g.id === existing?.guest_id);
   const totalPot = horses.reduce((s, h) => s + h.pot, 0);
 
   return (
@@ -299,64 +284,49 @@ export default function IndexPage({
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <button className="modal-close" onClick={() => setModalOpen(false)}>✕</button>
 
-            {existing ? (
-              <>
-                <h2>Your Bet</h2>
-                <p>Your prediction is locked in. Good luck! 🤞</p>
-                <table>
-                  <tbody>
-                    <tr><th>Horse</th><td>{existingGuest?.name ?? '—'}</td></tr>
-                    <tr><th>Predicted date</th><td>{existing.predicted_date}</td></tr>
-                    <tr><th>Wager</th><td>${existing.bet_amount}</td></tr>
-                    <tr><th>Submitted</th><td>{formatDate(existing.submitted_at)}</td></tr>
-                  </tbody>
-                </table>
-              </>
-            ) : (
-              <>
-                <h2>Place Your Bet</h2>
-                <p style={{ fontSize: '0.9rem', color: '#555', marginBottom: '1rem' }}>
-                  Closes <strong>{windowCloseDate}</strong>. Predictions are final.
-                </p>
-                <form onSubmit={handleSubmit}>
-                  <label>
-                    Horse
-                    <select value={guestId} onChange={(e) => setGuestId(e.target.value)} required>
-                      <option value="" disabled>Select a horse…</option>
-                      {guests.map((g) => (
-                        <option key={g.id} value={g.id}>{g.name}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Predicted booking date
-                    <input
-                      type="date"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      required
-                    />
-                  </label>
-                  <label>
-                    Wager (${MIN_WAGER}–${MAX_WAGER})
-                    <input
-                      type="number"
-                      min={MIN_WAGER}
-                      max={MAX_WAGER}
-                      step={1}
-                      value={betAmount}
-                      onChange={(e) => setBetAmount(e.target.value)}
-                      placeholder="e.g. 50"
-                      required
-                    />
-                  </label>
-                  {formError && <p className="error">{formError}</p>}
-                  <button type="submit" disabled={loading}>
-                    {loading ? 'Locking in…' : 'Lock In Prediction'}
-                  </button>
-                </form>
-              </>
-            )}
+            <>
+              <h2>Place Your Bet</h2>
+              <p style={{ fontSize: '0.9rem', color: '#555', marginBottom: '1rem' }}>
+                Closes <strong>{windowCloseDate}</strong>.
+              </p>
+              <form onSubmit={handleSubmit}>
+                <label>
+                  Horse
+                  <select value={guestId} onChange={(e) => setGuestId(e.target.value)} required>
+                    <option value="" disabled>Select a horse…</option>
+                    {guests.map((g) => (
+                      <option key={g.id} value={g.id}>{g.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Predicted booking date
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    required
+                  />
+                </label>
+                <label>
+                  Wager (${MIN_WAGER}–${MAX_WAGER})
+                  <input
+                    type="number"
+                    min={MIN_WAGER}
+                    max={MAX_WAGER}
+                    step={1}
+                    value={betAmount}
+                    onChange={(e) => setBetAmount(e.target.value)}
+                    placeholder="e.g. 50"
+                    required
+                  />
+                </label>
+                {formError && <p className="error">{formError}</p>}
+                <button type="submit" disabled={loading}>
+                  {loading ? 'Locking in…' : 'Lock In Prediction'}
+                </button>
+              </form>
+            </>
           </div>
         </div>
       )}
