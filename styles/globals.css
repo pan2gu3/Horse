@@ -190,7 +190,7 @@ tr:last-child td {
   font-size: 0.9rem;
   color: #444;
   line-height: 1.5;
-  padding-left: 0.25rem;
+  padding-left: 0;
 }
 
 .info-scoring-desc {
