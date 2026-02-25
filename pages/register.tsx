@@ -39,7 +39,7 @@ export default function RegisterPage() {
       </Head>
       <div className="container">
         <h1>Create Account</h1>
-        <p>Join the prediction pool for Connor&apos;s Bachelor Party.</p>
+        <p>Join the prediction pool for Ryan&apos;s Bachelor Party.</p>
         <div className="card">
           <form onSubmit={handleSubmit}>
             <label>
