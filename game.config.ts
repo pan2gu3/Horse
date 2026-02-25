@@ -3,7 +3,6 @@ const gameConfig = {
   guests: [
     "Alex",
     "Bryan",
-    "Troy",
   ],
 } as const;
 
